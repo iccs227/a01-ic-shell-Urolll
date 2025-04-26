@@ -130,19 +130,24 @@ int main() {
         }
 
         if (strcmp(detect_4, "exit") == 0) {
-            return 0;
+            int code = 0;
+            if (sscanf(buffer, "exit %d", &code) == 1) {
+                code &= 0xFF;
+                printf("exiting with %d\n", code);
+                return code;
+            }
+            if (strcmp(buffer, "exit\n") == 0) {
+                printf("exiting with %d\n", code);
+                return code;
+            }
         }
-
-        char detect_5[6];
-        strncpy(detect_5, buffer, 5);
-        detect_5[5] = '\0';
         
-        if (strcmp(detect_5, "clear") == 0) {
+        if (strcmp(buffer, "clear\n") == 0) {
             printf("\033[2J\033[H");
             continue;
         }
         
-        if (strcmp(detect_5, "otter") == 0) {
+        if (strcmp(buffer, "otter\n") == 0) {
             print_otter();
             continue;
         }
