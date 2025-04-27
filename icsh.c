@@ -99,61 +99,89 @@ void print_otter() {
     return;
 }
 
-int main() {
+int main(int argc, char* argv[]) {
+    FILE* input = stdin;
+    int fileFlag = 0;
     char buffer[MAX_CMD_BUFFER] = "";
     char last_command[MAX_CMD_BUFFER] = "";
-    printf("Welcome to Otter Land! \n");
-    printf("Here you can give me commands!\n");
-    print_otter();
-    
+
+    if (argc >= 2) {
+        input = fopen(argv[1], "r");
+        if (!input) {
+            perror("Error opening file");
+            return 1;
+        }
+        fileFlag = 1;
+    }
+
+    if (!fileFlag) {
+        printf("Welcome to Otter Land!\n");
+        printf("Here you can give me commands!\n");
+        print_otter();
+    }
+    else {
+        char* filename = NULL;
+        filename = argv[1];
+        printf("Welcome to Otter Land!\n");
+        printf("Starting with: %s\n", filename);
+    }
+
     while (1) {
-        printf("icsh $ ");
+        if (!fileFlag) {
+            printf("icsh $ ");
+            fflush(stdout);
+        }
+
         strcpy(last_command, buffer);
-        fgets(buffer, 255, stdin);
-        
-        if (strcmp(buffer, "\n") == 0) {
-            continue;
+        if (!fgets(buffer, MAX_CMD_BUFFER, input)) {
+            if (!fileFlag) printf("\n");
+            break;
         }
- 
-        if (strcmp(buffer, "!!\n") == 0) {
-            strcpy(buffer, last_command);
-            printf("%s", buffer);
-        }
-        
-        char detect_4[5];
-        strncpy(detect_4, buffer, 4);
-        detect_4[4] = '\0';
-        
-        if (strcmp(detect_4, "echo") == 0) {
-            printf("%s", buffer + 5);
+
+        buffer[strcspn(buffer, "\n")] = '\0';
+
+        if (strlen(buffer) == 0 && fileFlag) {
             continue;
         }
 
-        if (strcmp(detect_4, "exit") == 0) {
-            int code = 0;
-            if (sscanf(buffer, "exit %d", &code) == 1) {
-                code &= 0xFF;
-                printf("exiting with %d\n", code);
-                return code;
+        if (strcmp(buffer, "!!") == 0) {
+            if (strlen(last_command) == 0) {
+                if (!fileFlag) printf("No previous command\n");
+                continue;
             }
-            if (strcmp(buffer, "exit\n") == 0) {
-                printf("exiting with %d\n", code);
-                return code;
-            }
+            strcpy(buffer, last_command);
+            if (!fileFlag) printf("%s\n", buffer);
         }
-        
-        if (strcmp(buffer, "clear\n") == 0) {
+
+        if (strncmp(buffer, "echo ", 4) == 0) {
+            printf("%s\n", buffer + 5);
+            continue;
+        }
+
+        if (strncmp(buffer, "exit", 4) == 0) {
+            int code = 0;
+            sscanf(buffer, "exit %d", &code);
+            code &= 0xFF;
+            printf("exiting with %d\n", code);
+            if (input != stdin) fclose(input);
+            return code;
+        }
+
+        if (strcmp(buffer, "clear") == 0) {
             printf("\033[2J\033[H");
             continue;
         }
-        
-        if (strcmp(buffer, "otter\n") == 0) {
+
+        if (strcmp(buffer, "otter") == 0) {
             print_otter();
             continue;
         }
-        else {
+
+        if (strlen(buffer) > 0) {
             printf("bad command\n");
-            continue;
         }
     }
+
+    if (input != stdin) fclose(input);
+    return 0;
 }
