@@ -15,6 +15,7 @@ string copy and slicing: https://stackoverflow.com/questions/26620388/c-substrin
 #include "stdio.h"
 #include "string.h"
 #include "utility.h"
+#include <termio.h>
 
 int main(int argc, char* argv[]) {
     FILE* input = stdin;
@@ -40,6 +41,8 @@ int main(int argc, char* argv[]) {
         printf("Welcome to Otter Land!\n");
         printf("Starting with: %s\n", filename);
     }
+
+    set_signals();
 
     while (1) {
         if (!fileFlag) {
@@ -82,7 +85,17 @@ int main(int argc, char* argv[]) {
         }
 
         if (strlen(buffer) > 0) {
-            printf("bad command\n");
+            char* args[MAX_CMD_BUFFER/2 + 1];
+            int arg_count = 0;
+            char* token = strtok(buffer, " ");
+            while (token != NULL && arg_count < MAX_CMD_BUFFER / 2) {
+                args[arg_count++] = token;
+                token = strtok(NULL, " ");
+            }
+            args[arg_count] = NULL;
+            if (arg_count > 0) {
+                run_external(args[0], args);
+            }
         }
     }
 

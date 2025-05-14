@@ -1,6 +1,16 @@
 #include "utility.h"
+#include <signal.h>
 #include <stdio.h>
 #include <string.h>
+
+void set_signals(void) {
+    struct sigaction sa;
+    sa.sa_handler = SIG_IGN;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = SA_RESTART;
+    sigaction(SIGINT, &sa, NULL);
+    sigaction(SIGTSTP, &sa, NULL);
+}
 
 int handle_double_bang(char *buffer, const char *last_command, int fileFlag) {
     if (strcmp(buffer, "!!") == 0) {
@@ -132,4 +142,17 @@ void print_otter() {
         printf("⠀⠀⢀⣽⣿⣿⣿⣿⣿⣿⣿⣿⡿⠋⠍⠑⠒⠒⠋⠙⠙⠻⢿⣭⡿⡽⣯⣟⣳⣟⣾⡏⠹⣦⣹⡆⠀⠀\n");
         printf("⠀⢠⡿⣯⠷⣯⢿⡿⣽⣿⠟⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⢿⣿⡵⢯⠷⣯⣿⠀⠀⠈⠋⠀⠀⠀\n");    }
     return;
+}
+
+void run_external(const char* command, char* const args[]) {
+    pid_t pid = fork();
+    if (pid == 0) {
+        execvp(command, args);
+        printf("bad command\n");
+        exit(1);
+    }
+    else {
+        int status;
+        waitpid(pid, &status, 0);
+    }
 }
