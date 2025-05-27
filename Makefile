@@ -4,14 +4,17 @@ BINARY=icsh
 
 all: icsh
 
-icsh: icsh.o utility.o
-	$(CC) -o $(BINARY) $(CFLAGS) icsh.o utility.o
+icsh: icsh.o utility.o signal.o
+	$(CC) -o $(BINARY) $(CFLAGS) icsh.o utility.o signal.o
 
 icsh.o: icsh.c utility.h
 	$(CC) $(CFLAGS) -c icsh.c
 
 utility.o: utility.c utility.h
 	$(CC) $(CFLAGS) -c utility.c
+
+signal.o: signal.c signal.h
+	$(CC) $(CFLAGS) -c signal.c
 
 .PHONY: clean
 

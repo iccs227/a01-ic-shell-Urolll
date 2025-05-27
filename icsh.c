@@ -15,7 +15,10 @@ string copy and slicing: https://stackoverflow.com/questions/26620388/c-substrin
 #include "stdio.h"
 #include "string.h"
 #include "utility.h"
+#include "signal.h"
 #include <termio.h>
+
+int exit_code = 1;
 
 int main(int argc, char* argv[]) {
     FILE* input = stdin;
@@ -50,7 +53,6 @@ int main(int argc, char* argv[]) {
             fflush(stdout);
         }
 
-        strcpy(last_command, buffer);
         if (!fgets(buffer, MAX_CMD_BUFFER, input)) {
             if (!fileFlag) printf("\n");
             break;
@@ -58,11 +60,14 @@ int main(int argc, char* argv[]) {
 
         buffer[strcspn(buffer, "\n")] = '\0';
 
+        handle_double_bang(buffer, last_command, fileFlag);
+        strcpy(last_command, buffer);
+        
         if (strlen(buffer) == 0 && fileFlag) {
             continue;
         }
 
-        if (handle_double_bang(buffer, last_command, fileFlag)) {
+        if (signaling_echo_exit(buffer)) {
             continue;
         }
 
@@ -70,10 +75,10 @@ int main(int argc, char* argv[]) {
             continue;
         }
 
-        int exit_code = handle_exit(buffer, fileFlag);
-        if (exit_code != -1) {
+        int exit_status = handle_exit(buffer, fileFlag);
+        if (exit_status != -1) {
             if (input != stdin) fclose(input);
-            return exit_code;
+            return exit_status;
         }
 
         if (handle_clear(buffer)) {
@@ -93,6 +98,7 @@ int main(int argc, char* argv[]) {
                 token = strtok(NULL, " ");
             }
             args[arg_count] = NULL;
+            
             if (arg_count > 0) {
                 run_external(args[0], args);
             }
