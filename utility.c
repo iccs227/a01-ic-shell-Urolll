@@ -1,5 +1,6 @@
 #include "utility.h"
 #include "signal.h"
+#include "jobs.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -139,46 +140,82 @@ void print_otter() {
     return;
 }
 
-void run_external(const char* command, char* args[]) {
+void run_external(const char* job_command, char* args[], int fileFlag) {
+    int background = 0;
+    int i = 0;
+    while (args[i]) i++;
+    if (i > 0 && strcmp(args[i-1], "&") == 0) {
+        background = 1;
+        args[i-1] = NULL;
+    }
+
     pid_t pid = fork();
     if (pid == 0) {
         setpgid(0, 0);
-        tcsetpgrp(STDIN_FILENO, getpgid(0));
-              
-        if (handle_redirection(args) == -1) exit(1);
-        execvp(command, args);
-        printf("bad command\n");
-        exit(1);
         
-    } else {
-        setpgid(pid, pid);
-        tcsetpgrp(STDIN_FILENO, pid);
-        int status;
-        set_pid_foreground(pid);
-        
-        while (1) {
-            if (waitpid(pid, &status, WUNTRACED) == -1) {
-                perror("waitpid");
-                break;
-            }
-            
-            if (WIFEXITED(status) || WIFSIGNALED(status)) {
-                exit_code = WIFEXITED(status) ? WEXITSTATUS(status) : 128 + WTERMSIG(status);
-                break;
-            }
-            
-            if (WIFSTOPPED(status)) {
-                printf("\n[%d] Stopped\n", pid);
-                exit_code = 128 + WSTOPSIG(status);
-                break;
+        if (!background) {
+            tcsetpgrp(STDIN_FILENO, getpgid(0));
+        } else {
+            int null_fd = open("/dev/null", O_RDONLY);
+            if (null_fd > 0) {
+                dup2(null_fd, STDIN_FILENO);
+                close(null_fd);
             }
         }
         
-        signal(SIGTTOU, SIG_IGN);
-        tcsetpgrp(STDIN_FILENO, getpgid(getpid()));
+        signal(SIGINT, SIG_DFL);
+        signal(SIGTSTP, SIG_DFL);
         signal(SIGTTOU, SIG_DFL);
         
-        set_pid_foreground(0);
+        if (handle_redirection(args) == -1) {
+            exit(1);
+        }
+        
+        execvp(args[0], args);
+        printf("bad command\n");
+        exit(1);
+    } else {
+        setpgid(pid, pid);
+        
+        add_job(pid, job_command, background ? JOB_RUNNING : JOB_RUNNING);
+        
+        if (background) {
+            Job* job = find_job_by_pid(pid);
+            if (job) {
+                printf("[%d] %d\n", job->id, pid);
+            }
+        } else {
+            set_pid_foreground(pid);
+            tcsetpgrp(STDIN_FILENO, pid);
+            
+            int status;
+            while (1) {
+                if (waitpid(pid, &status, WUNTRACED) == -1) {
+                    perror("waitpid");
+                    break;
+                }
+                
+                if (WIFEXITED(status)) {
+                    exit_code = WEXITSTATUS(status);
+                    remove_job(pid);
+                    break;
+                } else if (WIFSIGNALED(status)) {
+                    exit_code = 128 + WTERMSIG(status);
+                    remove_job(pid);
+                    break;
+                } else if (WIFSTOPPED(status)) {
+                    exit_code = 128 + WSTOPSIG(status);
+                    update_job(pid, JOB_STOPPED);
+                    printf("\n[%d] Stopped\n", pid);
+                    break;
+                }
+            }
+            
+            signal(SIGTTOU, SIG_IGN);
+            tcsetpgrp(STDIN_FILENO, getpgid(getpid()));
+            signal(SIGTTOU, SIG_DFL);
+            set_pid_foreground(0);
+        }
     }
 }
 
@@ -186,6 +223,7 @@ int handle_redirection(char* args[]) {
     int i = 0;
     int input_fd = -1, output_fd = -1;
     char* input_file = NULL, *output_file = NULL;
+    int append_mode = 0;
 
     while (args[i]) {
         if (strcmp(args[i], "<") == 0) {
@@ -204,6 +242,16 @@ int handle_redirection(char* args[]) {
             output_file = args[i+1];
             args[i] = NULL;
             i++;
+            append_mode = 0;
+        } else if (strcmp(args[i], ">>") == 0) {
+            if (!args[i+1]) {
+                printf("Missing output file\n");
+                return -1;
+            }
+            output_file = args[i+1];
+            args[i] = NULL;
+            i++;
+            append_mode = 1;
         }
         i++;
     }
@@ -219,7 +267,14 @@ int handle_redirection(char* args[]) {
     }
 
     if (output_file) {
-        output_fd = open(output_file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+        int flags = O_WRONLY | O_CREAT;
+        if (append_mode) {
+            flags |= O_APPEND;
+        } else {
+            flags |= O_TRUNC;
+        }
+        
+        output_fd = open(output_file, flags, 0644);
         if (output_fd < 0) {
             perror("Error opening output file");
             return -1;

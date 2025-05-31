@@ -1,7 +1,7 @@
 clear
 echo otter
-otter
 echo :3
 !!
 !!
 !!
+ls -la

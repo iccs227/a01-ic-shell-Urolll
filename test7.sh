@@ -1,0 +1,10 @@
+firefox --private-window https://www.youtube.com/watch?v=wDiv3JBT7A8
+firefox --private-window https://www.youtube.com/watch?v=wDiv3JBT7A8
+firefox --private-window https://www.youtube.com/watch?v=wDiv3JBT7A8
+firefox --private-window https://www.youtube.com/watch?v=wDiv3JBT7A8
+firefox --private-window https://www.youtube.com/watch?v=wDiv3JBT7A8
+firefox --private-window https://www.youtube.com/watch?v=wDiv3JBT7A8
+firefox --private-window https://www.youtube.com/watch?v=wDiv3JBT7A8
+firefox --private-window https://www.youtube.com/watch?v=wDiv3JBT7A8
+firefox --private-window https://www.youtube.com/watch?v=wDiv3JBT7A8
+firefox --private-window https://www.youtube.com/watch?v=wDiv3JBT7A8
