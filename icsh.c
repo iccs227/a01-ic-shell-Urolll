@@ -33,6 +33,7 @@ int main(int argc, char* argv[]) {
     char original_command[MAX_CMD_BUFFER] = "";
     int skip_last_command_update = 0;
 
+    // File Mode Flagging
     if (argc >= 2) {
         input = fopen(argv[1], "r");
         if (!input) {
@@ -42,6 +43,7 @@ int main(int argc, char* argv[]) {
         fileFlag = 1;
     }
 
+    // Displays a Welcome Message based on File Mode Flagging
     if (!fileFlag) {
         printf("Welcome to Otter Land!\n");
         printf("Here you can give me commands!\n");
@@ -55,14 +57,18 @@ int main(int argc, char* argv[]) {
     set_signals();
     initial_jobs();
 
+    // Begin of Main Loop
     while (1) {
+        // If a job is done, remove it
         cleanup_done_jobs();
-        
+
+        // Command Prompt for Interactive Mode
         if (!fileFlag) {
             printf("icsh $ ");
             fflush(stdout);
         }
 
+        // Read a Line and Remove Trailing Newline
         if (!fgets(buffer, MAX_CMD_BUFFER, input)) {
             if (!fileFlag) printf("\n");
             break;
@@ -73,11 +79,13 @@ int main(int argc, char* argv[]) {
 
         strcpy(original_command, buffer);
 
+        // Ignore Empty Line
         if (strlen(buffer) == 0) {
             skip_last_command_update = 1;
             continue;
         }
 
+        // Handling of !!
         int is_double_bang = (strcmp(buffer, "!!") == 0);
         int contains_double_bang = (strstr(buffer, "!!") != NULL);
         
@@ -115,35 +123,41 @@ int main(int argc, char* argv[]) {
         if (!skip_last_command_update) {
             strcpy(last_command, original_command);
         }
-        
-        int exit_status = handle_exit(buffer, fileFlag);
+
+        // Handle Exiting 
+        int exit_status = handle_exit(buffer);
         if (exit_status != -1) {
             if (input != stdin) fclose(input);
             cleanup_jobs();
             return exit_status;
         }
 
+        // Handle echo $?
         if (signaling_echo_exit(buffer)) {
             exit_code = 0;
             continue;
         }
 
+        // Handle Clear Command
         if (handle_clear(buffer)) {
             exit_code = 0;
             continue;
         }
 
+        // Handle Otter Command
         if (handle_otter(buffer)) {
             exit_code = 0;
             continue;
         }
 
+        // Handle Jobs
         if (strcmp(buffer, "jobs") == 0) {
             print_jobs();
             exit_code = 0;
             continue;
         }
-        
+
+        // Handle Foreground Job
         if (strncmp(buffer, "fg %", 4) == 0) {
             int job_id = atoi(buffer + 4);
             Job* job = find_job_by_id(job_id);
@@ -178,6 +192,7 @@ int main(int argc, char* argv[]) {
             continue;
         }
 
+        // Handle Background Job
         if (strncmp(buffer, "bg %", 4) == 0) {
             int job_id = atoi(buffer + 4);
             Job* job = find_job_by_id(job_id);
@@ -193,7 +208,8 @@ int main(int argc, char* argv[]) {
 
         char job_command[MAX_CMD_BUFFER];
         strcpy(job_command, buffer);
-        
+
+        // Split Command Line into Array of Arguments
         char *args[MAX_CMD_BUFFER/2 + 1];
         int arg_count = 0;
         char *token = strtok(buffer, " ");
@@ -208,6 +224,7 @@ int main(int argc, char* argv[]) {
             continue;
         }
 
+        // Handle Echo
         if (strcmp(args[0], "echo") == 0) {
             int saved_stdout = dup(STDOUT_FILENO);
             int saved_stdin = dup(STDIN_FILENO);
@@ -229,9 +246,11 @@ int main(int argc, char* argv[]) {
             continue;
         }
 
-        run_external(job_command, args, fileFlag);
+        // Execute Commands that are not built in using fork() and execvp()
+        run_external(job_command, args);
     }
 
+    // Clean Up when Exiting
     if (input != stdin) fclose(input);
     cleanup_jobs();
     return 0;

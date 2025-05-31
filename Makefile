@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-Wall -pedantic -g 
+CFLAGS= -O2 -Wall -Wextra -Werror -pedantic -g 
 BINARY=icsh
 
 all: icsh

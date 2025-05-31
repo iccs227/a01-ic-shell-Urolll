@@ -8,23 +8,30 @@
 extern int exit_code;
 static pid_t foreground_pid = 0;
 
+// Set Current Foreground Process PID
 void set_pid_foreground(pid_t pid) {
     foreground_pid = pid;
 }
 
+
+// Sends Signal to Foreground Process
 void kill_foreground(int signal) {
     if (foreground_pid > 0) {
         kill(foreground_pid, signal);
     }
 }
 
+// Signal Handler for CTRL+C and CTRL+Z
+// CTRL+C is SIGINT
+// CTRL+Z is SIGTSTP
 void handle_signal(int sig) {
     if (foreground_pid > 0) {
+        // Send to All Processes in that Group
         kill(-foreground_pid, sig);
     }
 }
 
-
+// Customize Our Signal Handler
 void set_signals(void) {
     struct sigaction sa;
     sa.sa_handler = handle_signal;
@@ -43,6 +50,7 @@ void set_signals(void) {
     signal(SIGTTOU, SIG_IGN);
 }
 
+// Logic for echo $?
 int signaling_echo_exit(char *buffer) {
     if (strcmp(buffer, "echo $?") == 0) {
         printf("%d\n", exit_code);
@@ -51,7 +59,9 @@ int signaling_echo_exit(char *buffer) {
     return 0;
 }
 
-void sigchld_handler(int sig) {
+// Change the State of Child Process
+void sigchld_handler(int signum) {
+    (void) signum; // Silence unused parameter warning
     pid_t pid;
     int status;
     while ((pid = waitpid(-1, &status, WNOHANG | WUNTRACED | WCONTINUED)) > 0) {

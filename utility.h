@@ -14,11 +14,11 @@
 void print_otter(void);
 int handle_double_bang(char *buffer, const char *last_command, int fileFlag);
 void print_otter();
-int handle_echo(const char *buffer, int fileFlag);
-int handle_exit(const char *buffer, int fileFlag);
+int handle_echo(const char *buffer);
+int handle_exit(const char *buffer);
 int handle_clear(const char *buffer);
 int handle_otter(const char *buffer);
-void run_external(const char* job_command, char* args[], int fileFlag);
+void run_external(const char* job_command, char* args[]);
 int handle_redirection(char* args[]);
 
 #endif

@@ -9,11 +9,13 @@
 Job* job_list = NULL;
 int next_job_id = 1;
 
+// Reset Job List and Next Job ID Counter
 void initial_jobs() {
   job_list = NULL;
   next_job_id = 1;
 }
 
+// Allocation a New Struct for a New Job
 void add_job(pid_t pid, const char *command, JobState state) {
   Job* new_job = malloc(sizeof(Job));
   new_job->id = next_job_id++;
@@ -24,6 +26,7 @@ void add_job(pid_t pid, const char *command, JobState state) {
   job_list = new_job;
 }
 
+// Remove a Job and Free Memory Allocation
 void remove_job(pid_t pid) {
   Job** ptr = &job_list;
   while(*ptr) {
@@ -38,6 +41,7 @@ void remove_job(pid_t pid) {
   }
 }
 
+// Find Job by Process ID and Update its State
 void update_job(pid_t pid, JobState state) {
   for (Job *job = job_list; job; job = job->next) {
     if (job->pid == pid) {
@@ -47,6 +51,7 @@ void update_job(pid_t pid, JobState state) {
   }
 }
 
+// Print All Jobs in the List with Description
 void print_jobs() {
     if (job_list == NULL) {
         printf("No jobs\n");
@@ -64,6 +69,7 @@ void print_jobs() {
     }
 }
 
+// Free All Jobs and their Commands before Exiting Shell
 void cleanup_jobs(void) {
   while (job_list) {
     Job* temp = job_list;
@@ -73,6 +79,7 @@ void cleanup_jobs(void) {
   }
 }
 
+// Locate Job by PID
 Job* find_job_by_pid(pid_t pid) {
   for (Job* job = job_list; job; job = job->next) {
     if (job->pid == pid) return job;
@@ -80,6 +87,7 @@ Job* find_job_by_pid(pid_t pid) {
   return NULL;
 }
 
+// Locate Job by ID
 Job* find_job_by_id(int id) {
   for (Job* job = job_list; job; job = job->next) {
     if (job->id == id) return job;
@@ -87,6 +95,8 @@ Job* find_job_by_id(int id) {
   return NULL;
 }
 
+// Iterates over Job List and Remove all Jobs marked as JOB_DONE
+// Free Memory for these Jobs
 void cleanup_done_jobs(void) {
     Job** ptr = &job_list;
     while (*ptr) {

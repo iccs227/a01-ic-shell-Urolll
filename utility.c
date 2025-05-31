@@ -8,6 +8,7 @@
 
 extern int exit_code;
 
+// Logic for !!
 int handle_double_bang(char *buffer, const char *last_command, int fileFlag) {
     if (strcmp(buffer, "!!") == 0) {
         if (strlen(last_command) == 0) {
@@ -24,7 +25,8 @@ int handle_double_bang(char *buffer, const char *last_command, int fileFlag) {
     return 0;
 }
 
-int handle_echo(const char *buffer, int fileFlag) {
+// Logic for echo
+int handle_echo(const char *buffer) {
     if (strncmp(buffer, "echo ", 5) == 0) {
         printf("%s\n", buffer + 5);
         return 1;
@@ -32,10 +34,12 @@ int handle_echo(const char *buffer, int fileFlag) {
     return 0;
 }
 
-int handle_exit(const char *buffer, int fileFlag) {
+// Logic for exit
+int handle_exit(const char *buffer) {
     if (strncmp(buffer, "exit", 4) == 0) {
         int code = 0;
         sscanf(buffer, "exit %d", &code);
+        // Mask the Exit Code to be within Range
         code &= 0xFF;
         printf("exiting with %d\n", code);
         return code;
@@ -43,6 +47,7 @@ int handle_exit(const char *buffer, int fileFlag) {
     return -1;
 }
 
+// Logic for clear
 int handle_clear(const char *buffer) {
     if (strcmp(buffer, "clear") == 0) {
         printf("\033[2J\033[H");
@@ -51,6 +56,7 @@ int handle_clear(const char *buffer) {
     return 0;
 }
 
+// Checks for otter as buffer
 int handle_otter(const char *buffer) {
     if (strcmp(buffer, "otter") == 0) {
         print_otter();
@@ -59,7 +65,9 @@ int handle_otter(const char *buffer) {
     return 0;
 }
 
+// Logic for Printing Otter ASCII Art
 void print_otter() {
+    // Randomize between 3 Arts Equally
     int r = rand() % 3;
     if (r == 0) {
         printf("      ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣀⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n");
@@ -140,7 +148,8 @@ void print_otter() {
     return;
 }
 
-void run_external(const char* job_command, char* args[], int fileFlag) {
+// Run External Commands by forking and using execvp()
+void run_external(const char* job_command, char* args[]) {
     int background = 0;
     int i = 0;
     while (args[i]) i++;
@@ -219,6 +228,7 @@ void run_external(const char* job_command, char* args[], int fileFlag) {
     }
 }
 
+// Handle the Logic of Redirection
 int handle_redirection(char* args[]) {
     int i = 0;
     int input_fd = -1, output_fd = -1;
